@@ -133,5 +133,53 @@ All in [Eva/curation/](Eva/curation/):
 - `victims/*.py` — 5 victims, each with starter + hardened tiers
 - `categories/*.py` — attack candidate definitions
 - `run_category.py` + `run_multi_turn_category.py` — runners
-- `save_yaml.py` — converts run results → library YAMLs
+- `save_yaml.py` — converts run results → library YAMLs (emits the new post-hardening schema)
 - `runs/` — all cascade run JSONs (historical)
+- `tools/schema_migrate.py` — one-shot schema migration (severity→observed_tier, mirrors, niches_tested)
+- `tools/randomize_fingerprints.py` — fingerprint + domain randomizer (deterministic, dry-run + apply modes)
+- `tools/validate_schema.py` — assert every YAML matches the post-hardening schema
+- `tools/check_signals.py` — re-fire the 14 winners with abort thresholds
+
+---
+
+## Session 2026-05-24 — Library hardening pass
+
+### Why
+
+External reviewer audited the 151-attack library and surfaced 4 issues, ranked by impact:
+1. **Fingerprintability** — card "4242" in 34 attacks, "ACG-7732" in 23, "Mark Chen" in 11, all malicious domains follow `{word}-{word}(-services)?.io`. A single regex catches every Eva attack.
+2. **Domain monoculture** — same root cause, separate fix.
+3. **Severity label confusion** — `severity: baseline-guardrail` is a test-outcome label disguised as an impact label. SMB customers reading reports will misread.
+4. **Schema gaps** — `source: "Eva-original, mirrors X"` is freeform; `test_results` has no `niches_tested` so empty `niches_succeeded` is ambiguous.
+
+### What shipped (3 commits)
+
+1. **26c931e** — pre-pass snapshot (backup commit, .gitignore for .env/venvs)
+2. **c3754cf** — schema migration: `severity` → `observed_tier`, bucket `baseline-guardrail` → `refused-by-tested-models`, extracted `mirrors: [<id>]` from freeform source, added `test_results.niches_tested` (backfilled from runs/), updated `save_yaml.py` to emit the new schema
+3. **d535c99** — randomize fingerprints + diversify domain patterns: 109 YAMLs randomized (42 had no fingerprintable values), upstream synced to `curation/categories/*.py` + `success_signals.py`
+
+### Key design decisions (locked via plan-mode questions)
+
+- **Sync scope**: modified BOTH the 151 YAMLs AND `curation/categories/*.py` + `success_signals.py` so the library stays regeneratable end-to-end.
+- **Severity fix**: rename-only (the test-outcome bucket name + the field name). Manual blast-radius severity deferred to v2.
+- **niches_tested source**: backfilled from `curation/runs/*.json` — all 151 attacks had run records, zero fallbacks needed.
+- **Brand pool per niche**: 3–4 brands per niche instead of one, to avoid a different fingerprint at one level up.
+
+### Bugs caught + fixed
+
+- **Schema regex stripped too much**: greedy "mirrors X" removal initially left "that worked"/"blending pattern" residue and over-consumed closing parens. Fixed in two passes.
+- **Card pool included "4242"**: 1/16 chance per attack of replacing 4242 with 4242 (no-op). Found via post-apply fingerprint scan; removed from pool.
+- **Set iteration broke determinism**: iterating over `set(...)` made byte-output non-deterministic across processes (PYTHONHASHSEED). The verification step 0 ("byte-identical across two runs") caught it before any writes — exactly its purpose. Fixed by sorting every set iteration.
+
+### Verification gates run
+
+- ✅ Determinism: byte-identical across two independent dry-runs with same seed
+- ✅ Fingerprint regression: 0 occurrences of "4242", "ACG-7732", "ACG-9981", "Mark Chen", `external-*-services.io`, `external-*.io`
+- ✅ Schema validation: all 151 YAMLs match new schema
+- ✅ Upstream parity: every `categories/*.py` imports cleanly post-sync
+- ⏳ Signal re-fire test: in progress (8 winners through cascade, ~10-30 min)
+
+### Honest framing change
+
+Old: "Your agent failed 22 baseline-guardrail attacks."
+New: "Your agent failed 22 attacks that every tested model (gpt-4o-mini through gpt-5) refused." (or whatever the reporter eventually phrases it as — the label change makes the report wording honest.)
