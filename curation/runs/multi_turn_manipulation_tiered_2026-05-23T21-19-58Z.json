@@ -1,0 +1,42 @@
+[
+  {
+    "attack_id": "mt-001",
+    "niche": "ecommerce",
+    "error": "'prompt'"
+  },
+  {
+    "attack_id": "mt-001",
+    "niche": "banking",
+    "error": "'prompt'"
+  },
+  {
+    "attack_id": "mt-002",
+    "niche": "dental",
+    "error": "'prompt'"
+  },
+  {
+    "attack_id": "mt-002",
+    "niche": "banking",
+    "error": "'prompt'"
+  },
+  {
+    "attack_id": "mt-003",
+    "niche": "workspace",
+    "error": "'prompt'"
+  },
+  {
+    "attack_id": "mt-004",
+    "niche": "dev_assistant",
+    "error": "'prompt'"
+  },
+  {
+    "attack_id": "mt-005",
+    "niche": "banking",
+    "error": "'prompt'"
+  },
+  {
+    "attack_id": "mt-005",
+    "niche": "ecommerce",
+    "error": "'prompt'"
+  }
+]
