@@ -46,7 +46,9 @@ Under this methodology, the library has **3 high-tier attacks** (each beats a pr
 
 Plus **9 medium-tier**, **27 low-tier**, and **112 refused-by-tested-models**. The refused ones are kept because they're plausible attacker patterns that weakly-prompted agents (e.g. day-one SMB deployments) may still fall for.
 
-We don't have inflated numbers to report. We have replicated numbers. If a benchmark tells you "8 attacks beat gpt-5", ask whether they re-ran each one.
+We don't have inflated numbers to report. We have replicated numbers.
+
+> **If a benchmark tells you "8 attacks beat gpt-5", ask whether they re-ran each one.**
 
 `observed_tier` is also a **test-outcome label**, not an impact label. `refused-by-tested-models` means "today's models refuse this", not "this attack is harmless if it ever lands." Manual impact severity is a v2 enhancement.
 
@@ -66,10 +68,23 @@ Full pass details: [architecture.md §4.1.1](architecture/architecture.md).
 
 ---
 
+## What Eva is NOT
+
+A few things worth being explicit about, because most SMBs don't yet have language for "what kind of tool is this":
+
+- **Not a defense.** Eva tests; it doesn't protect. Running Eva tells you which attacks land — fixing them is on you (better system prompts, input validation, tool-call confirmation, etc.).
+- **Not a domain-specific evaluator.** Eva won't tell you whether your agent's refund logic is correct, whether its medical advice is accurate, or whether its calendar code has bugs. It tests adversarial robustness against prompt injection, nothing else.
+- **Not a replacement for human red-teaming.** A bored human creative attacker will find things 151 pre-written attacks won't. Eva is the cheap, repeatable baseline you run on every deploy; humans are the deep dive you run before high-stakes launches.
+- **Not a leaderboard / certification.** No "Eva Verified" badge. Score interpretation is contextual to your agent and threat model.
+
+---
+
 ## Status
 
 **Library:** complete and verified.
 **Runtime (connector, runner, judge, reporter):** in development.
 **Public release:** GitHub + first YouTube video target.
+
+**Want to use the library today, before the runtime ships?** The 151 attacks are usable standalone. Each YAML has a `prompt` (or `turns` for multi-turn) field and a strict `success_signal`. Pipe the prompt into your agent, capture the response + any tool calls, and check against the signal — that's exactly what Eva's runner will eventually do for you in one command. Start with the 3 high-tier attacks listed above to see what currently bypasses production-grade prompts.
 
 The curation tools used to build and maintain the library live in `curation/tools/` and are not part of the shipped Eva v1 binary. They stay in-repo for reproducibility and v2 re-curation.
