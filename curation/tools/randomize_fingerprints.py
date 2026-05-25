@@ -193,7 +193,10 @@ def gen_persona_replacement(faker: Faker) -> str:
 
 
 def gen_dollar_replacement(original_str: str, rng: random.Random) -> str:
-    """New $ amount in same magnitude bucket."""
+    """New $ amount in same magnitude bucket, SNAPPED to attacker-plausible
+    round values. Random integers like '$1,014' instead of round numbers like
+    '$2,500' look suspicious to victims (real social-engineering targets ask
+    for round amounts). Snap each bucket to its native denomination."""
     digits = re.sub(r"[^\d.]", "", original_str)
     if not digits:
         return original_str
@@ -201,22 +204,21 @@ def gen_dollar_replacement(original_str: str, rng: random.Random) -> str:
         val = float(digits)
     except ValueError:
         return original_str
-    has_cents = "." in digits
-    # Magnitude bucket: <100, 100-1k, 1k-10k, 10k-100k, 100k+
+    # Bucket -> (low, high, snap-to)
+    # snap-to: round to nearest multiple. Avoids "$1,014" style oddities.
     if val < 100:
-        new = rng.randint(10, 99) + (rng.random() if has_cents else 0)
+        low, high, snap = 10, 95, 5
     elif val < 1000:
-        new = rng.randint(100, 999) + (rng.random() if has_cents else 0)
+        low, high, snap = 100, 950, 50
     elif val < 10000:
-        new = rng.randint(1000, 9999) + (rng.random() if has_cents else 0)
+        low, high, snap = 1000, 9500, 500
     elif val < 100000:
-        new = rng.randint(10000, 99999) + (rng.random() if has_cents else 0)
+        low, high, snap = 10000, 95000, 2500
     else:
-        new = rng.randint(100000, 999999) + (rng.random() if has_cents else 0)
-    # Format: commas, optional .XX
-    if has_cents:
-        return f"${new:,.2f}"
-    return f"${int(new):,}"
+        low, high, snap = 100000, 950000, 25000
+    raw = rng.randint(low, high)
+    snapped = round(raw / snap) * snap
+    return f"${snapped:,}"
 
 
 def gen_iban_replacement(original: str, faker: Faker) -> str:
@@ -314,6 +316,34 @@ def build_mapping(attack: dict) -> dict[str, str]:
     for original, new in persona_map.items():
         for ov, nv in zip(persona_variants(original), persona_replacement_variants(new)):
             mapping[ov] = nv
+        # Standalone first-name fallback: if the original full name appears in
+        # the text AND the first name ALSO appears in standalone form (e.g.
+        # "I (Maria) verified" after the full name was introduced as
+        # "Maria Sanchez" earlier), replace those too. Otherwise the narrative
+        # breaks: random Faker swap leaves "Updated by Agent #427 (William
+        # Smith)" alongside "I (Maria) already verified".
+        # Standalone first-name handling: longest-first replacement in
+        # apply_mapping means "Maria Sanchez" -> "William Smith" runs FIRST,
+        # so any remaining standalone "Maria" reference (e.g. "I (Maria)
+        # verified...") will still be the original string when the
+        # shorter "Maria" -> "William" mapping runs. Only add the mapping if a
+        # standalone-form occurrence actually exists (not just as part of the
+        # full name) to avoid polluting the mapping for attacks that don't
+        # need it.
+        orig_first = original.split()[0]
+        new_first = new.split()[0]
+        parts = original.split()
+        orig_last = parts[1] if len(parts) > 1 else ""
+        # standalone = first name NOT followed by the surname
+        if orig_last:
+            standalone_re = re.compile(
+                rf"\b{re.escape(orig_first)}\b(?!\s+{re.escape(orig_last)}\b)"
+            )
+        else:
+            standalone_re = re.compile(rf"\b{re.escape(orig_first)}\b")
+        if standalone_re.search(joined):
+            mapping[orig_first] = new_first
+            mapping[orig_first.lower()] = new_first.lower()
 
     # --- Cards ---
     for card in FULL_TEST_CARDS:
@@ -334,8 +364,28 @@ def build_mapping(attack: dict) -> dict[str, str]:
         mapping[iban] = gen_iban_replacement(iban, faker)
 
     # --- Dollar amounts ---
+    # Include both "$X" (matched in prompts) and bare "X" / "X,YYY" forms
+    # (which appear in success_signals like "amount 2500"). Without this,
+    # signal references like 'amount 2500' don't follow prompt's '$2,500'
+    # randomization, breaking the judge check.
     for amt in sorted(set(DOLLAR_RE.findall(joined))):
-        mapping[amt] = gen_dollar_replacement(amt, rng)
+        new_amt = gen_dollar_replacement(amt, rng)
+        mapping[amt] = new_amt
+        # Bare forms: "2,500" and "2500"
+        amt_no_dollar = amt.lstrip("$")
+        amt_no_comma = amt_no_dollar.replace(",", "")
+        new_no_dollar = new_amt.lstrip("$")
+        new_no_comma = new_no_dollar.replace(",", "")
+        # Only add if the bare form actually appears AND isn't already mapped
+        # (avoid over-replacing standalone numbers used as IDs/counters).
+        for bare_orig, bare_new in [(amt_no_dollar, new_no_dollar), (amt_no_comma, new_no_comma)]:
+            if bare_orig == amt:
+                continue  # already handled
+            if bare_orig in mapping:
+                continue
+            # Word-boundary check: bare digit string must appear standalone
+            if re.search(rf"\b{re.escape(bare_orig)}\b", joined):
+                mapping[bare_orig] = bare_new
 
     # --- Malicious domains (collect, then replace) ---
     found_domains = set()
@@ -486,9 +536,12 @@ def main():
     ap.add_argument("--dry-run", action="store_true", help="Preview only; no writes.")
     ap.add_argument("--apply", action="store_true", help="Mutate YAMLs and upstream.")
     ap.add_argument("--force", action="store_true", help="Re-randomize already-marked files.")
+    ap.add_argument("--only-ids", type=str, default="",
+                    help="Comma-separated attack IDs to process (default: all). Useful for selective re-randomization after a bug fix.")
     ap.add_argument("--out", type=Path, default=PREVIEW / "randomization_preview",
                     help="Dry-run output dir (default: ~/eva_preview/randomization_preview/)")
     args = ap.parse_args()
+    only_ids = {s.strip() for s in args.only_ids.split(",") if s.strip()}
     if not (args.dry_run or args.apply):
         print("Specify --dry-run or --apply", file=sys.stderr)
         sys.exit(2)
@@ -512,6 +565,12 @@ def main():
 
     for f in files:
         try:
+            # If --only-ids restricts processing, peek at id without full parse
+            if only_ids:
+                peek = yaml.load(f)
+                if peek is None or peek.get("id") not in only_ids:
+                    counts["skipped:not-in-only-ids"] += 1
+                    continue
             result, mapping = randomize_yaml(f, yaml, dry_run=dry, force=args.force)
             counts[result] += 1
             if result == "randomized":
