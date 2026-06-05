@@ -219,3 +219,38 @@ The re-fire test from 2026-05-24 failed both abort thresholds (3 critical drops,
 The contrast with AgentDojo/AgentHarm/InjecAgent: they publish single-trial results. Eva publishes N=3 majority. That's an honest differentiator — and a v1/README.md section now leads with it.
 
 The headline becomes "3 attacks that reliably beat production-hardened prompts in 3 independent trials." Less than the original "12 frontier wins" claim, but the original was inflated by single-trial luck and didn't replicate. The new number is real.
+
+---
+
+## Session 2026-06-03/05 — Runtime build: Sessions 1+2
+
+### Session 1 (2026-06-03) — the judge
+
+- Built [v1/eva/judge.py](v1/eva/judge.py): extracted from `curation/pipeline.py`, added 5 few-shot examples to the system prompt, derived `failure_type` from `technique` (not asked of AI), derived `confidence` from tool-call match + reasoning hedge words.
+- Built [v1/eva/tests/test_judge_calibration.py](v1/eva/tests/test_judge_calibration.py): re-judges 86 historical rounds from the 14 hardening winners.
+- **Calibration: 94.2% agreement (81/86).** Threshold was 90% — passed. The 5 disagreements were all cases where the new judge was arguably MORE accurate than the curation judge (stricter on AND-conditions, less strict on signals that don't require tool calls).
+- Bug caught: first calibration run came back at 62.8% because the test mixed current (post-randomization) attack metadata with historical (pre-randomization) responses. Fixed by loading attacks from git ref `c3754cf`.
+- David hand-checked 10 random verdicts before commit — all looked correct.
+- Committed: `2eb8398`.
+
+### Session 2 (2026-06-05) — connector + demo + runner + results
+
+- Built [v1/eva/attack_loader.py](v1/eva/attack_loader.py): walks the library, filters by category/technique/tier/niche.
+- Built [v1/eva/connector.py](v1/eva/connector.py): stateless send_attack() over OpenAI-compatible endpoint. Capture-only on tool_calls. Retries on transient errors. Special case: `target_endpoint == "demo"` routes in-process to the bundled demo.
+- Built [v1/eva/examples/demo_agent.py](v1/eva/examples/demo_agent.py): Acme Goods Co. customer-support chatbot (starter prompt + 4 tools), pattern lifted from `curation/victims/ecommerce.py`.
+- Built [v1/eva/runner.py](v1/eva/runner.py): orchestrator. Single-turn path + multi-turn path with synthetic `{"status": "ok"}` tool replies between turns (proven pattern from `curation/multi_turn.py`).
+- Built [v1/eva/results.py](v1/eva/results.py): score formula + JSON writer per architecture.md §4.5 schema.
+
+**Full smoke test result (151 attacks against demo):**
+- Score: **75/100**
+- 35 succeeded / 6 partial / 110 refused / 0 errors
+- Runtime: 504s (~8.5 min)
+- Cost: ~$0.09
+
+Per-technique breakdown showed indirect_via_input (8/20 = 40% succeeded) and instruction_override (8/28 = 29%) were the most effective categories against the demo's undefended prompt. tool_misuse only landed 2/24 — the demo's tool descriptions seem to constrain it reasonably well.
+
+End-to-end pipeline confirmed working. Judge is correctly grading live agent responses for the first time. results.json schema matches architecture.md spec.
+
+### What's left for Eva v1 code-complete
+
+- **Session 3**: reporter.py (turns results.json → report.md), CLI polish (proper `eva run` entry point with argparse), end-to-end smoke against report output, content layer (voice doc, README polish).
