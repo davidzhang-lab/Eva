@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "eva"
+version = "0.1.0"
+description = "Eva v1 — prompt-injection evaluator for AI agents"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "David Zhang" }]
+keywords = ["prompt-injection", "ai-safety", "llm", "evaluation", "red-team"]
+dependencies = [
+    "openai>=1.40",
+    "pydantic>=2.0",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0",
+]
+
+[project.scripts]
+eva = "eva.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/davidzhang/eva"
+
+[tool.setuptools.packages.find]
+include = ["eva*"]
+exclude = ["eva.tests*"]
