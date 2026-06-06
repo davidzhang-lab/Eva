@@ -88,3 +88,12 @@ A few things worth being explicit about, because most SMBs don't yet have langua
 **Want to use the library today, before the runtime ships?** The 151 attacks are usable standalone. Each YAML has a `prompt` (or `turns` for multi-turn) field and a strict `success_signal`. Pipe the prompt into your agent, capture the response + any tool calls, and check against the signal — that's exactly what Eva's runner will eventually do for you in one command. Start with the 3 high-tier attacks listed above to see what currently bypasses production-grade prompts.
 
 The curation tools used to build and maintain the library live in `curation/tools/` and are not part of the shipped Eva v1 binary. They stay in-repo for reproducibility and v2 re-curation.
+---
+
+## License
+
+Eva v1 is licensed under the **GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later)** — see [LICENSE](../LICENSE).
+
+In short: free to use, modify, and self-host. If you modify Eva and offer it as a service (including SaaS), you must release your modifications under the same license.
+
+For **commercial / closed-source use** where AGPL terms don't fit, contact **david.zhang@web.de** for a commercial license.
