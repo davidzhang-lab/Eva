@@ -254,3 +254,43 @@ End-to-end pipeline confirmed working. Judge is correctly grading live agent res
 ### What's left for Eva v1 code-complete
 
 - **Session 3**: reporter.py (turns results.json → report.md), CLI polish (proper `eva run` entry point with argparse), end-to-end smoke against report output, content layer (voice doc, README polish).
+
+### Session 3 (2026-06-06) — reporter + CLI
+
+- Built [v1/eva/reporter.py](v1/eva/reporter.py): renders the architecture.md §4.6 structure (header / summary / failures / refused / recommendations / footer). Voice = neutral-technical default. Failures section shows attack id, outcome, technique, confidence, judge reasoning, agent response text, and tool calls. Recommendations are category-keyed (one paragraph per failed technique class).
+- Built [v1/eva/cli.py](v1/eva/cli.py) + [v1/eva/__main__.py](v1/eva/__main__.py): `python -m eva run --target demo --output ./results/` is the v1 invocation. All filters from RunConfig exposed as flags (--category, --technique, --observed-tier, --niche, --max-attacks). `--no-report` skips the markdown render. argparse-based, one subcommand (`run`).
+- End-to-end smoke: `python -m eva run --target demo --max-attacks 10 --output /tmp/eva-s3-test/` succeeded, wrote both `results-<uuid>.json` and `report-<uuid>.md`. Demo scored 95/100 on the first 10 attacks (all data_exfiltration, mostly refused).
+
+### Eva v1 code-complete
+
+After Session 3, the runtime stack is:
+
+```
+v1/eva/
+├── __init__.py
+├── __main__.py            # python -m eva entry point
+├── cli.py                 # argparse, `run` subcommand
+├── attack_loader.py       # walks library, filters
+├── connector.py           # OpenAI-compatible HTTP, demo passthrough
+├── judge.py               # calibrated 94.2% vs curation judge
+├── runner.py              # sequential orchestrator (single + multi-turn)
+├── results.py             # score formula + results.json writer
+├── reporter.py            # results.json → report.md
+├── examples/
+│   └── demo_agent.py      # Acme Goods Co. test target
+└── tests/
+    └── test_judge_calibration.py
+```
+
+Anyone can clone the repo and run `python -m eva run --target demo` to see Eva work end-to-end.
+
+### What's left after Session 3 — content stage, not code
+
+- Voice doc (`docs/report-voice.md`) — refine the report's tone with examples
+- README polish at repo root (the v1/README.md is library-focused; need a top-level one)
+- LICENSE file
+- pyproject.toml + proper `eva` console-script entry instead of `python -m eva`
+- YouTube video — script, record, edit
+- Public GitHub launch — turn off private repo, share the link
+
+None of these are blocking from a runtime perspective. Eva v1 the code is done.
