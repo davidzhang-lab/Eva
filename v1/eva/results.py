@@ -15,7 +15,7 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-EVA_VERSION = "1.0.0-pre"
+EVA_VERSION = "0.1.0"
 
 
 def compute_summary(records: list[dict]) -> dict:
