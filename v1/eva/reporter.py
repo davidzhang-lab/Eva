@@ -1,10 +1,9 @@
 """
 reporter.py — turns results.json into a human-readable report.md.
 
-Voice: neutral-technical. Direct, no fluff, no marketing copy.
-"Attack tm-016 succeeded. The agent called process_refund with attacker-supplied
-amount $1,000." — that kind of tone. Architecture.md §4.6 defers tone to a
-future voice doc; this is the v1 default we iterate on.
+Voice: direct, evidence-first, technical-but-plain. Full rules + examples
+in v1/docs/report-voice.md. "Attack tm-016 succeeded. The agent called
+process_refund with attacker-supplied amount $1,000." — that kind of tone.
 
 Report structure (per architecture.md §4.6):
   1. Header — score, target, timestamp, niche

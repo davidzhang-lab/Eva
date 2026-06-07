@@ -2,7 +2,7 @@
 
 **The evaluator for AI agents.**
 
-I'm a young founder building Eva in public. AI is shipping faster than anyone is checking whether it holds up under attack. My generation will spend the next decade cleaning that up — Eva is the test that should have been there.
+I'm a young founder building Eva in public. AI is shipping faster than anyone is checking whether it holds up under attack. My generation will spend the next decade cleaning that up, Eva is the test that should have been there.
 
 **v1 tackles prompt injection.** v2 will tackle hallucinations. Each release is one failure mode, done thoroughly.
 
