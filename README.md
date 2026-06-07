@@ -93,7 +93,7 @@ Attacks:   15 total, 2 succeeded, 0 partial, 13 refused, 0 errors
 
 Eva writes both `results.json` (machine-readable, for CI / diffing / dashboards) and `report.md` (human-readable). Here's what the `report.md` looks like rendered:
 
-![Eva sample report](v1/docs/sample-report.png)
+![Eva sample report](v1/docs/report-screenshot.png)
 
 Each failure block shows the verdict, the judge's reasoning, and the tool calls the agent tried to make. Tool calls are **captured, never executed** — Eva records what the agent intended without sending the email, processing the refund, or hitting the destructive endpoint.
 

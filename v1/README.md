@@ -56,7 +56,7 @@ For each failure, `report.md` shows the outcome, technique, confidence, failure 
 
 Here's what the report looks like rendered:
 
-![Eva sample report](docs/sample-report.png)
+![Eva sample report](docs/report-screenshot.png)
 
 `results.json` carries the same content in machine-readable form for diffing, CI gates, and dashboards.
 
