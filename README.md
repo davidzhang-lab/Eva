@@ -137,4 +137,6 @@ For **commercial / closed-source use** where AGPL terms don't fit, contact **dav
 
 ## About
 
-Built by David Zhang. Build-in-public on YouTube — channel link ships with the first video.
+Built by David Zhang. I architect; an AI coding assistant (Claude, nicknamed "Friday") writes the implementation. Every line is reviewed and every test run before commits land. Session-by-session record at [dev-log.md](dev-log.md).
+
+Build-in-public on YouTube — channel link ships with the first video.
