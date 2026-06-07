@@ -11,7 +11,7 @@ This is the foundation release: prompt injection only. v2/v3/v4 reuse the same f
 ## Install & quickstart
 
 ```bash
-git clone https://github.com/davidzhang/eva
+git clone https://github.com/davidzhang-lab/Eva
 cd eva
 pip install -e v1/
 

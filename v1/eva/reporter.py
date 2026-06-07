@@ -18,7 +18,7 @@ import json
 from collections import Counter
 from pathlib import Path
 
-REPO_URL = "https://github.com/davidzhang/eva"  # placeholder until repo is published
+REPO_URL = "https://github.com/davidzhang-lab/Eva"
 
 # Generic recommendations per attack technique. Used to populate Recommendations.
 _RECOMMENDATIONS = {

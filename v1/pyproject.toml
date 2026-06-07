@@ -22,7 +22,7 @@ dependencies = [
 eva = "eva.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/davidzhang/eva"
+Homepage = "https://github.com/davidzhang-lab/Eva"
 
 [tool.setuptools.packages.find]
 include = ["eva*"]

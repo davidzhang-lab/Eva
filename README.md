@@ -19,7 +19,7 @@ Eva tests; it doesn't fix. The report tells you which attacks landed. The patch 
 ## Quickstart
 
 ```bash
-git clone https://github.com/davidzhang/eva
+git clone https://github.com/davidzhang-lab/Eva
 cd eva
 
 # install into your Python 3.12+ venv
